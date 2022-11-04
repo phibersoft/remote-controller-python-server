@@ -4,12 +4,24 @@ import time
 from lib.utils import logger
 
 
+# Get wifi networks
+def get_wifi_networks():
+    networks = []
+    for line in os.popen('netsh wlan show networks'):
+        if 'SSID' in line:
+            networks.append(line.split(':')[1].strip())
+    return networks
+
+
 # Find the saved wifi networks
-def get_saved_wifi_networks():
+def get_saved_active_wifi_networks():
+    networks = get_wifi_networks()
     saved_networks = []
     for line in os.popen('netsh wlan show profiles'):
         if 'All User Profile' in line:
-            saved_networks.append(line.split(':')[1].strip())
+            saved_network = line.split(':')[1].strip()
+            if saved_network in networks:
+                saved_networks.append(saved_network)
     return saved_networks
 
 
@@ -27,9 +39,9 @@ def get_current_wireless_ip():
 current_ip = get_current_wireless_ip()
 if current_ip is None:
     logger('No active wifi connection', 'error')
-    saved_wifis = get_saved_wifi_networks()
+    saved_wifis = get_saved_active_wifi_networks()
     if len(saved_wifis) == 0:
-        logger('No saved wifi networks', 'error')
+        logger('No saved active wifi networks', 'error')
         exit(13)
     else:
         logger(f'Forcing connection to {saved_wifis[0]}')
@@ -43,5 +55,5 @@ if current_ip is None:
         if current_ip is None:
             logger('Failed to connect to wifi', 'error')
             exit(14)
-else:
-    logger(f'Socket will start on {current_ip}')
+
+logger(f'Socket server will be available at http://{current_ip}:9292')
